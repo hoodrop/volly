@@ -31,7 +31,7 @@ type config struct {
 func defaultConfig() config {
 	return config{
 		NumCalls:      700,
-		IntervalMs:    30,
+		IntervalMs:    30, // Recommended minimum interval is 5ms
 		Timezone:      "Asia/Singapore",
 		RequestFormat: "auto",
 		RequestFile:   "request.txt",

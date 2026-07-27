@@ -1,4 +1,4 @@
-# booking
+# Booking Sniper
 
 A precision request sniper for online bookings. Paste the exact booking HTTP 
 request, tell it when the booking window opens, and it fires a burst of 
@@ -7,14 +7,14 @@ instantly cancels everything still in flight or pending.
 
 ## How it works
 
-1. **Parse** — reads a raw HTTP request pasted from Proxyman's RAW view (or
-   browser devtools' "Copy as raw") out of `request.txt`.
+1. **Parse** — reads a raw HTTP request pasted from Proxyman's RAW view or
+   others (to be implemented) out of `request.txt`.
 2. **Schedule** — you give it a launch time (or fire immediately), a request
    count, and an interval. Request *i* is due at `start + (i-1) * interval` —
    absolute-time scheduling, so one late wake-up never pushes the rest later.
 3. **Fire** — each request gets its own goroutine that sleeps until ~2ms
    before its deadline, then busy-spins against the wall clock. Launches land
-   within tens of microseconds of target (observed: mean jitter ~14µs).
+   within tens of microseconds of target.
 4. **Win** — the first `200` sets an atomic flag and cancels the shared
    context: in-flight requests abort, pending launches skip. Every record
    (target time, actual fire time, status, latency, body) goes to stdout and a
