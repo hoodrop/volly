@@ -1,0 +1,62 @@
+name: Release
+
+# Triggered by pushing a version tag, e.g.:
+#   git tag v1.0.0 && git push origin v1.0.0
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # required to create GitHub Releases
+
+jobs:
+  build:
+    name: Build (${{ matrix.goos }}/amd64)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, windows, darwin]
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: amd64
+      CGO_ENABLED: 0
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Build binary
+        run: |
+          bin="booking-${GOOS}-amd64"
+          [ "$GOOS" = "windows" ] && bin="${bin}.exe"
+          go build -trimpath -ldflags="-s -w" -o "dist/${bin}" .
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: booking-${{ matrix.goos }}-amd64
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${{ github.ref_name }}" dist/* --generate-notes --title "${{ github.ref_name }}"
