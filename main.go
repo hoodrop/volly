@@ -8,6 +8,9 @@ import (
 	"os"
 	"sync"
 	"time"
+	// Embed the IANA tz database so zone names like "Asia/Singapore" resolve
+	// even where the host has no system tzdata (static binary, minimal container).
+	_ "time/tzdata"
 )
 
 func main() {

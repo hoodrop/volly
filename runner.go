@@ -83,7 +83,7 @@ func (r *runner) doRequest(id int, target time.Time) {
 			id, r.log.stamp(target), r.log.stamp(fire), err, time.Since(fire))
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, _ := io.ReadAll(resp.Body)
 
 	r.log.logf("[%03d] target=%s fire=%s status=%d took=%v body=%s",
