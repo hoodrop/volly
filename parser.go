@@ -32,7 +32,7 @@ type requestParser struct {
 // first one that succeeds.
 var requestParsers = []requestParser{
 	{"proxyman-raw", parseProxymanRaw},
-	// {"chrome-curl", parseChromeCurl}, // TODO: Chrome devtools
+	{"chrome-curl", parseChromeCurl},
 }
 
 // loadRequest reads the pasted request from path and parses it with the

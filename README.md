@@ -8,7 +8,7 @@ instantly cancels everything still in flight or pending.
 ## How it works
 
 1. **Parse** — reads a raw HTTP request pasted from Proxyman's RAW view or
-   others (to be implemented) out of `request.txt`.
+   curl command out of `request.txt`.
 2. **Schedule** — you give it a launch time (or fire immediately), a request
    count, and an interval. Request *i* is due at `start + (i-1) * interval` —
    absolute-time scheduling, so one late wake-up never pushes the rest later.
