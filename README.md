@@ -1,4 +1,4 @@
-# Booking Sniper [![CI](https://github.com/hoodrop/booking-sniper/actions/workflows/ci.yml/badge.svg)](https://github.com/hoodrop/booking-sniper/actions/workflows/ci.yml)
+# Booking Sniper &middot; [![CI](https://github.com/hoodrop/booking-sniper/actions/workflows/ci.yml/badge.svg)](https://github.com/hoodrop/booking-sniper/actions/workflows/ci.yml)
 
 A precision request sniper for online bookings. Paste the exact booking HTTP
 request, tell it when the booking window opens, and it fires a burst of
