@@ -1,8 +1,8 @@
 # Booking Sniper
 
-A precision request sniper for online bookings. Paste the exact booking HTTP 
-request, tell it when the booking window opens, and it fires a burst of 
-requests with sub-millisecond launch accuracy — the first `200 OK` wins and 
+A precision request sniper for online bookings. Paste the exact booking HTTP
+request, tell it when the booking window opens, and it fires a burst of
+requests with sub-millisecond launch accuracy — the first `200 OK` wins and
 instantly cancels everything still in flight or pending.
 
 ## How it works
