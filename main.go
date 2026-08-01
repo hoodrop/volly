@@ -57,6 +57,10 @@ func main() {
 	log.logf("config: %s %s calls=%d interval=%v timezone=%s format=%s body=%s",
 		tmpl.method, tmpl.url, numCalls, interval, zoneLabel(loc), format, tmpl.body)
 
+	// In-code `chrt -f … taskset -c …`: pin and go real-time before the
+	// countdown, well ahead of the first launch. Linux-only, best-effort.
+	applyScheduling(cfg, log.logf)
+
 	// Build the client before the countdown so nothing stands between the
 	// precise wake-up and the first request being fired.
 	client := &http.Client{

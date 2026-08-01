@@ -26,6 +26,8 @@ type config struct {
 	RequestFormat string `json:"request_format"` // parser name from requestParsers, or "auto"
 	RequestFile   string `json:"request_file"`   // file containing the pasted request
 	LogDir        string `json:"log_dir"`        // each run writes a fresh timestamped file here
+	RTPriority    int    `json:"rt_priority"`    // SCHED_FIFO priority 1-99, 0 disables (Linux only)
+	CPUCore       int    `json:"cpu_core"`       // pin all threads to this core, -1 disables (Linux only)
 }
 
 func defaultConfig() config {
@@ -36,6 +38,8 @@ func defaultConfig() config {
 		RequestFormat: "auto",
 		RequestFile:   "request.txt",
 		LogDir:        "logs",
+		RTPriority:    99, // the in-code equivalent of `chrt -f 99`
+		CPUCore:       1,  // the in-code equivalent of `taskset -c 1`
 	}
 }
 
@@ -71,6 +75,10 @@ func (c config) validate() error {
 		return fmt.Errorf("request_file must not be empty")
 	case c.LogDir == "":
 		return fmt.Errorf("log_dir must not be empty")
+	case c.RTPriority < 0 || c.RTPriority > 99:
+		return fmt.Errorf("rt_priority must be 0-99 (0 disables), got %d", c.RTPriority)
+	case c.CPUCore < -1:
+		return fmt.Errorf("cpu_core must be >= -1 (-1 disables), got %d", c.CPUCore)
 	}
 	return nil
 }
