@@ -32,14 +32,14 @@ type config struct {
 
 func defaultConfig() config {
 	return config{
-		NumCalls:      700,
+		NumCalls:      500,
 		IntervalMs:    30, // Recommended minimum interval is 5ms
 		Timezone:      "Asia/Singapore",
 		RequestFormat: "auto",
 		RequestFile:   "request.txt",
 		LogDir:        "logs",
-		RTPriority:    99, // the in-code equivalent of `chrt -f 99`
-		CPUCore:       1,  // the in-code equivalent of `taskset -c 1`
+		RTPriority:    90, // the in-code equivalent of `chrt -f {number}`
+		CPUCore:       -1, // the in-code equivalent of `taskset -c {number}`, currently disabled as its performance is not stable
 	}
 }
 

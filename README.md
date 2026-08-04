@@ -71,7 +71,8 @@ pinned to `cpu_core` and switched to `SCHED_FIFO` at `rt_priority`, so a
 goroutine can't be migrated off its core or preempted inside its final ~2ms
 busy-spin. Both are `config.json` knobs (`rt_priority: 0` / `cpu_core: -1`
 disables) and both are best-effort — a failure logs a warning and the run
-continues with normal scheduling.
+continues with normal scheduling. (In the current version cpu_core pinning
+is disabled by default as its performance may differ from expected.)
 
 `SCHED_FIFO` requires `CAP_SYS_NICE`. Run as root, or grant just that one
 capability to the binary (re-apply after every rebuild):
