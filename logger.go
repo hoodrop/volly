@@ -15,7 +15,7 @@ import (
 type logger struct {
 	loc  *time.Location
 	file *os.File
-	path string // path of this run's log file, e.g. logs/booking-2026-07-26_22-30-05.log
+	path string // path of this run's log file, e.g. logs/volly-2026-07-26_22-30-05.log
 	ch   chan string
 	done chan struct{}
 }
@@ -26,7 +26,7 @@ func newLogger(dir string, loc *time.Location) (*logger, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, fmt.Errorf("creating log dir %s: %w", dir, err)
 	}
-	name := "booking-" + time.Now().In(loc).Format("2006-01-02_15-04-05") + ".log"
+	name := "volly-" + time.Now().In(loc).Format("2006-01-02_15-04-05") + ".log"
 	path := filepath.Join(dir, name)
 	f, err := os.Create(path)
 	if err != nil {

@@ -1,9 +1,9 @@
-# Booking Sniper &middot; [![CI](https://github.com/hoodrop/booking-sniper/actions/workflows/ci.yml/badge.svg)](https://github.com/hoodrop/booking-sniper/actions/workflows/ci.yml)
+# volly &middot; [![CI](https://github.com/hoodrop/volly/actions/workflows/ci.yml/badge.svg)](https://github.com/hoodrop/volly/actions/workflows/ci.yml)
 
-A precision request sniper for online bookings. Paste the exact booking HTTP
-request, tell it when the booking window opens, and it fires a burst of
-requests with sub-millisecond launch accuracy — the first `200 OK` wins and
-instantly cancels everything still in flight or pending.
+A precise HTTP request repeating launcher made by Go. Paste the exact HTTP
+request, tell volly when to fire, and it sends a burst of requests with
+sub-millisecond launch accuracy — the first `200 OK` wins and instantly
+cancels everything still in flight or pending.
 
 ## How it works
 
@@ -31,8 +31,8 @@ instantly cancels everything still in flight or pending.
 
 ## Setup
 
-1. **Capture the request.** Perform the booking step once, then copy the
-   exact request into `request.txt` in either supported format — with
+1. **Capture the request.** Send the request once manually, then copy it
+   into `request.txt` in either supported format — with
    `request_format: "auto"` the right parser is picked automatically.
 
    **Raw HTTP** (Proxyman's RAW view):
@@ -78,7 +78,7 @@ is disabled by default as its performance may differ from expected.)
 capability to the binary (re-apply after every rebuild):
 
 ```sh
-sudo setcap 'cap_sys_nice+ep' ./booking
+sudo setcap 'cap_sys_nice+ep' ./volly
 ```
 
 Off Linux the knobs are ignored (with a note in the log). To see what this
@@ -88,5 +88,5 @@ the feature on and off.
 ## Usage
 
 ```sh
-go run .          # or: go build -o booking . && ./booking
+go run .          # or: go build -o volly . && ./volly
 ```

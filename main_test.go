@@ -138,7 +138,7 @@ func TestLoggerWritesTimestampedFile(t *testing.T) {
 	if len(entries) != 1 {
 		t.Fatalf("expected 1 log file, got %d", len(entries))
 	}
-	if name := entries[0].Name(); !strings.HasPrefix(name, "booking-") || !strings.HasSuffix(name, ".log") {
+	if name := entries[0].Name(); !strings.HasPrefix(name, "volly-") || !strings.HasSuffix(name, ".log") {
 		t.Errorf("unexpected log filename %q", name)
 	}
 
