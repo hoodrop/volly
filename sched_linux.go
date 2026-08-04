@@ -13,7 +13,7 @@ import (
 
 // applyScheduling is the in-process equivalent of launching the binary via
 //
-//	chrt -f <rt_priority> taskset -c <cpu_core> ./booking
+//	chrt -f <rt_priority> taskset -c <cpu_core> ./volly
 //
 // Both settings are best-effort: without CAP_SYS_NICE the kernel denies
 // SCHED_FIFO, and the requested core may not exist — either way we log a
@@ -28,7 +28,7 @@ func applyScheduling(cfg config, logf func(string, ...any)) {
 }
 
 // threadIDs lists every thread of this process. Scheduling policy and CPU
-// affinity are per-thread attributes on Linux: `chrt … ./booking` sets them
+// affinity are per-thread attributes on Linux: `chrt … ./volly` sets them
 // before exec so every future thread inherits, whereas we must stamp each
 // already-running thread ourselves. Threads spawned afterwards inherit from
 // their (by then stamped) creator via clone(2).
@@ -111,7 +111,7 @@ func makeRealtime(prio int, logf func(string, ...any)) {
 	}
 	hint := ""
 	if permDenied {
-		hint = " — run as root, or once: sudo setcap 'cap_sys_nice+ep' ./booking (re-apply after every rebuild)"
+		hint = " — run as root, or once: sudo setcap 'cap_sys_nice+ep' ./volly (re-apply after every rebuild)"
 	}
 	switch {
 	case failed == len(tids):

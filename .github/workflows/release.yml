@@ -30,7 +30,7 @@ jobs:
 
       - name: Build binary
         run: |
-          bin="booking-${GOOS}-amd64"
+          bin="volly-${GOOS}-amd64"
           [ "$GOOS" = "windows" ] && bin="${bin}.exe"
           go build -trimpath -ldflags="-s -w" -o "dist/${bin}" .
 
@@ -42,7 +42,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: booking-${{ matrix.goos }}-amd64
+          name: volly-${{ matrix.goos }}-amd64
           path: dist/
           if-no-files-found: error
 
