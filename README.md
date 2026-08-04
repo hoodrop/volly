@@ -1,9 +1,9 @@
 # volly &middot; [![CI](https://github.com/hoodrop/volly/actions/workflows/ci.yml/badge.svg)](https://github.com/hoodrop/volly/actions/workflows/ci.yml)
 
-A precision request launcher for online bookings. Paste the exact booking
-HTTP request, tell volly when the booking window opens, and it fires a burst
-of requests with sub-millisecond launch accuracy — the first `200 OK` wins
-and instantly cancels everything still in flight or pending.
+A precise HTTP request repeating launcher made by Go. Paste the exact HTTP
+request, tell volly when to fire, and it sends a burst of requests with
+sub-millisecond launch accuracy — the first `200 OK` wins and instantly
+cancels everything still in flight or pending.
 
 ## How it works
 
@@ -31,8 +31,8 @@ and instantly cancels everything still in flight or pending.
 
 ## Setup
 
-1. **Capture the request.** Perform the booking step once, then copy the
-   exact request into `request.txt` in either supported format — with
+1. **Capture the request.** Send the request once manually, then copy it
+   into `request.txt` in either supported format — with
    `request_format: "auto"` the right parser is picked automatically.
 
    **Raw HTTP** (Proxyman's RAW view):
