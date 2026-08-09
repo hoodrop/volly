@@ -87,6 +87,44 @@ the feature on and off.
 
 ## Usage
 
+The default Linux flow is three separate steps — build, grant the capability
+`SCHED_FIFO` needs, then run:
+
 ```sh
-go run .          # or: go build -o volly . && ./volly
+go build -o volly .
+sudo setcap 'cap_sys_nice+ep' ./volly  # re-apply after every rebuild
+./volly
 ```
+
+The `setcap` step is optional: without it (or off Linux) the program logs a
+warning and runs with normal scheduling. `go run .` also works, but the
+capability can't stick to its throwaway temp binary, so that path always
+runs without `SCHED_FIFO`.
+
+## Choosing the interval
+
+Every request goroutine sleeps until `spinMargin` (2ms, see `runner.go`)
+before its absolute deadline, then busy-spins against the wall clock. Since
+all goroutines wait independently, an interval shorter than 2ms does not
+break anything — a request whose deadline has already passed fires
+immediately ("catch-up, never drop"), and any lateness shows up honestly in
+the `launch jitter` log line. What changes is the cost, and in one setup
+the accuracy:
+
+- **CPU.** The number of goroutines busy-spinning at any moment is roughly
+  `spinMargin / interval` — ~2 at a 1ms interval, ~4 at 0.5ms — each
+  pinning a core at 100% for the whole run.
+- **Accuracy.** Unpinned (the default), each spinner gets its own core and
+  jitter stays low. But with `cpu_core` pinning *and* `SCHED_FIFO` both
+  enabled, equal-priority FIFO threads on a single core don't timeshare:
+  whichever spinner grabs the core holds it until it fires, so a goroutine
+  with an earlier deadline can miss its target entirely and only fire late.
+  With very small intervals the first few launches also jitter more, since
+  their deadlines may pass while the goroutine spawn loop is still ramping
+  up.
+
+Practical guidance: keep the interval at 5ms or above (the config's own
+recommendation). If you genuinely need sub-2ms spacing, shrink `spinMargin`
+(e.g. to 200µs) — the spinning crowd shrinks proportionally, at the cost of
+the sleep phase's wake-up error (tens of µs up to ~1ms) landing directly in
+the jitter instead of being absorbed by the spin.
