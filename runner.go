@@ -28,6 +28,13 @@ type runner struct {
 	won     atomic.Int32 // set to 1 by the first goroutine that sees a 200
 	aborted atomic.Int32 // in-flight requests killed by the cancel
 	skipped atomic.Int32 // pending launches that never fired due to the cancel
+
+	// Winner details. Written only by the goroutine that wins the
+	// CompareAndSwap on won (a single writer), and read after wg.Wait() —
+	// the WaitGroup provides the happens-before edge, so no extra sync here.
+	winID     int
+	winStatus int
+	winBody   string
 }
 
 // doRequest waits for its absolute target time, fires, and logs the full
@@ -90,6 +97,9 @@ func (r *runner) doRequest(id int, target time.Time) {
 		id, r.log.stamp(target), r.log.stamp(fire), resp.StatusCode, time.Since(fire), string(body))
 
 	if resp.StatusCode == http.StatusOK && r.won.CompareAndSwap(0, 1) {
+		r.winID = id
+		r.winStatus = resp.StatusCode
+		r.winBody = string(body)
 		r.log.logf("[%03d] first 200 — cancelling all remaining requests", id)
 		r.cancel()
 	}

@@ -28,6 +28,7 @@ type config struct {
 	LogDir        string `json:"log_dir"`        // each run writes a fresh timestamped file here
 	RTPriority    int    `json:"rt_priority"`    // SCHED_FIFO priority 1-99, 0 disables (Linux only)
 	CPUCore       int    `json:"cpu_core"`       // pin all threads to this core, -1 disables (Linux only)
+	GRPCListen    string `json:"grpc_listen"`    // "volly serve" binds the gRPC API here, e.g. "127.0.0.1:50051"
 }
 
 func defaultConfig() config {
@@ -38,8 +39,9 @@ func defaultConfig() config {
 		RequestFormat: "auto",
 		RequestFile:   "request.txt",
 		LogDir:        "logs",
-		RTPriority:    90, // the in-code equivalent of `chrt -f {number}`
-		CPUCore:       -1, // the in-code equivalent of `taskset -c {number}`, currently disabled as its performance is not stable
+		RTPriority:    90,                // the in-code equivalent of `chrt -f {number}`
+		CPUCore:       -1,                // the in-code equivalent of `taskset -c {number}`, currently disabled as its performance is not stable
+		GRPCListen:    "127.0.0.1:50051", // localhost-only: the API is plaintext gRPC, expose it deliberately
 	}
 }
 
@@ -79,6 +81,8 @@ func (c config) validate() error {
 		return fmt.Errorf("rt_priority must be 0-99 (0 disables), got %d", c.RTPriority)
 	case c.CPUCore < -1:
 		return fmt.Errorf("cpu_core must be >= -1 (-1 disables), got %d", c.CPUCore)
+	case c.GRPCListen == "":
+		return fmt.Errorf("grpc_listen must not be empty")
 	}
 	return nil
 }
