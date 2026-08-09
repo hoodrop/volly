@@ -128,3 +128,44 @@ recommendation). If you genuinely need sub-2ms spacing, shrink `spinMargin`
 (e.g. to 200µs) — the spinning crowd shrinks proportionally, at the cost of
 the sleep phase's wake-up error (tens of µs up to ~1ms) landing directly in
 the jitter instead of being absorbed by the spin.
+
+## gRPC API (serve mode)
+
+Besides the interactive CLI, volly can run as a gRPC server so another
+program can trigger bursts directly — no `request.txt` involved; the caller
+passes method, URL, headers and body in the RPC itself:
+
+```sh
+./volly serve    # binds config.json's grpc_listen, default 127.0.0.1:50051
+```
+
+The service is defined in `proto/launcher/v1/launcher.proto`; generated Go
+code lives in `gen/` and is committed, so building never needs protoc. One
+RPC, unary: `Launch(LaunchRequest) returns (LaunchResponse)` — it blocks
+until the burst ends (first 200, or everything fired) and returns whether it
+won, the winning status/body, fired/aborted/skipped counts, jitter stats,
+and the run's log file path (per-request details go to the log, same as CLI
+runs). Cancelling the RPC cancels the run. Only one run at a time: a second
+`Launch` while one is in progress fails with `FAILED_PRECONDITION`.
+
+Go client sketch:
+
+```go
+conn, _ := grpc.NewClient("127.0.0.1:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+client := launcherv1.NewLauncherClient(conn)
+resp, err := client.Launch(ctx, &launcherv1.LaunchRequest{
+    Method:   "POST",
+    Url:      "https://example.com/foo/bar/",
+    Headers:  []*launcherv1.Header{{Name: "Authorization", Value: "Bearer ..."}},
+    Body:     `{"foo": "bar"}`,
+    LaunchAt: timestamppb.New(time.Date(2026, 8, 11, 9, 0, 0, 0, time.Local)), // omit to fire now
+    NumCalls: 500,
+    Interval: durationpb.New(30 * time.Millisecond),
+})
+```
+
+The API is plaintext gRPC bound to localhost by default — expose it beyond
+localhost only deliberately (e.g. behind mTLS). To regenerate the stubs
+after editing the proto: `brew install buf`,
+`go install google.golang.org/protobuf/cmd/protoc-gen-go@latest google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest`,
+then `buf generate`.

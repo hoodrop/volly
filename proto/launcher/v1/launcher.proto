@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package volly.launcher.v1;
+
+option go_package = "volly/gen/launcher/v1;launcherv1";
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+// Launcher fires a burst of identical HTTP requests with sub-millisecond
+// launch accuracy; the first 200 wins and cancels everything else.
+//
+// Only one run can be in progress at a time: a Launch call arriving while
+// another run is active fails immediately with FAILED_PRECONDITION.
+service Launcher {
+  // Launch fires the burst and blocks until it ends — either the first 200
+  // response or every request fired. Cancelling the RPC (client disconnect)
+  // cancels the run.
+  rpc Launch(LaunchRequest) returns (LaunchResponse);
+}
+
+// Header is one HTTP header line; repeat the name for multi-value headers.
+message Header {
+  string name = 1;
+  string value = 2;
+}
+
+message LaunchRequest {
+  string method = 1;              // "GET", "POST", ...
+  string url = 2;                 // full URL, scheme included
+  repeated Header headers = 3;    // Content-Length is ignored (set by the client)
+  string body = 4;
+
+  // When the first request is due; absent means "immediately". A time in the
+  // past fires immediately (catch-up, never drop).
+  optional google.protobuf.Timestamp launch_at = 5;
+
+  int32 num_calls = 6;                  // total requests in the burst, must be > 0
+  google.protobuf.Duration interval = 7;  // between consecutive launches, must be >= 0
+}
+
+message LaunchResponse {
+  bool won = 1;           // true if some request got a 200
+  int32 winning_id = 2;   // 1-based index of the winning request (0 if !won)
+  int32 winning_status = 3;
+  string winning_body = 4;
+
+  int32 fired = 5;             // requests actually launched
+  int32 aborted_inflight = 6;  // in-flight requests killed by the winner's cancel
+  int32 skipped_pending = 7;   // pending launches that never fired due to the cancel
+
+  google.protobuf.Duration mean_jitter = 8;  // fire time minus target time
+  google.protobuf.Duration max_jitter = 9;
+
+  // Per-request records (target, fire, status, latency, body) are written to
+  // this timestamped log file, same as the interactive CLI does.
+  string log_file = 10;
+}
