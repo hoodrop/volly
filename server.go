@@ -15,6 +15,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -50,7 +51,14 @@ func serve(cfg config, loc *time.Location) {
 		return
 	}
 
-	srv := grpc.NewServer()
+	// grpc-go's default enforcement (MinTime 5min, no pings without streams).
+	// Permit: pings no more often than 20s, idle or not.
+	srv := grpc.NewServer(
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             20 * time.Second,
+			PermitWithoutStream: true,
+		}),
+	)
 	launcherv1.RegisterLauncherServer(srv, &launcherServer{cfg: cfg, loc: loc})
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
