@@ -11,8 +11,11 @@ cancels everything still in flight or pending.
    the format: raw HTTP from Proxyman's RAW view, or a curl command from
    browser devtools' "Copy as cURL".
 2. **Schedule** — you give it a launch time (or fire immediately), a request
-   count, and an interval. Request *i* is due at `start + (i-1) * interval` —
-   absolute-time scheduling, so one late wake-up never pushes the rest later.
+   count, and an interval. The launch time may carry a fractional second —
+   `11:59:59.500` — and request 1 is due at exactly that instant, so the
+   jitter stats measure the true deviation from what you asked for. Request
+   *i* is due at `start + (i-1) * interval` — absolute-time scheduling, so
+   one late wake-up never pushes the rest later.
 3. **Fire** — each request gets its own goroutine that sleeps until ~2ms
    before its deadline, then busy-spins against the wall clock. Launches land
    within tens of microseconds of target. On Linux the process additionally
@@ -101,6 +104,19 @@ warning and runs with normal scheduling. `go run .` also works, but the
 capability can't stick to its throwaway temp binary, so that path always
 runs without `SCHED_FIFO`.
 
+At the launch-time prompt, enter a time in the configured timezone
+(`timezone` in `config.json`). The fractional second is optional and may be
+introduced by `.`, `,` or `:` — all of these are accepted:
+
+```
+11:59:59    11:59:59.5    11:59:59:500000    2026-08-25 11:59:59.250
+```
+
+A time-only entry means today, or tomorrow if that time already passed;
+leave it blank to fire immediately. The countdown displays the remaining
+time to the millisecond, and each log line `target=... fire=...` shows how
+close that launch landed to the instant you asked for.
+
 ## Choosing the interval
 
 Every request goroutine sleeps until `spinMargin` (2ms, see `runner.go`)
@@ -158,7 +174,8 @@ resp, err := client.Launch(ctx, &launcherv1.LaunchRequest{
     Url:      "https://example.com/foo/bar/",
     Headers:  []*launcherv1.Header{{Name: "Authorization", Value: "Bearer ..."}},
     Body:     `{"foo": "bar"}`,
-    LaunchAt: timestamppb.New(time.Date(2026, 8, 11, 9, 0, 0, 0, time.Local)), // omit to fire now
+    // Omit to fire now; fractional seconds are honored — this is 9:00:00.500:
+    LaunchAt: timestamppb.New(time.Date(2026, 8, 11, 9, 0, 0, 500000000, time.Local)),
     NumCalls: 500,
     Interval: durationpb.New(30 * time.Millisecond),
 })

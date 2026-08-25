@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	launcherv1 "volly/gen/launcher/v1"
 )
@@ -67,6 +68,38 @@ func TestLaunchWins(t *testing.T) {
 	}
 	if resp.GetLogFile() == "" {
 		t.Error("expected a log file path")
+	}
+}
+
+// A launch_at carrying a fractional second is honored as-is: the burst waits
+// for that exact instant rather than firing immediately or snapping to a
+// whole second.
+func TestLaunchWaitsForFractionalLaunchAt(t *testing.T) {
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, "ok")
+	}))
+	defer target.Close()
+
+	s := newTestServer(t)
+	req := launchReq(target.URL, 1, 0)
+
+	start := time.Now()
+	req.LaunchAt = timestamppb.New(start.Add(500 * time.Millisecond))
+
+	resp, err := s.Launch(context.Background(), req)
+	if err != nil {
+		t.Fatalf("Launch: %v", err)
+	}
+	// Correct behavior waits ~500ms; ignoring the fraction would fire in a
+	// few ms, snapping up to the next whole second could wait up to 1s.
+	if elapsed := time.Since(start); elapsed < 450*time.Millisecond || elapsed > 750*time.Millisecond {
+		t.Errorf("elapsed = %v, want ~500ms (fractional launch_at not honored)", elapsed)
+	}
+	// Request 1's target is launch_at itself, so jitter measures the true
+	// deviation from the requested instant — microseconds in a quiet test,
+	// bounded loosely here only to catch gross mis-aiming.
+	if mj := resp.GetMeanJitter().AsDuration(); mj < 0 || mj > 20*time.Millisecond {
+		t.Errorf("mean jitter = %v, want within [0, 20ms] of launch_at", mj)
 	}
 }
 

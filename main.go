@@ -76,11 +76,15 @@ func main() {
 	// precise wake-up and the first request being fired.
 	client := newClient(numCalls)
 
+	// Aim request 1 at the scheduled instant itself, not at whenever the
+	// countdown happens to end: the burst's timeline is anchored at launchAt.
+	start := time.Now()
 	if scheduled {
+		start = launchAt
 		countdownUntil(log, launchAt)
 	}
 
-	runBurst(context.Background(), log, client, tmpl, numCalls, interval)
+	runBurst(context.Background(), log, client, tmpl, numCalls, interval, start)
 
 	log.close()
 }
@@ -121,7 +125,11 @@ type burstSummary struct {
 // start + (i-1)*interval and blocks until the first 200 cancels the rest or
 // every request has completed. It logs the per-run summary lines and returns
 // them in structured form. Cancelling ctx cancels the run.
-func runBurst(ctx context.Context, log *logger, client *http.Client, tmpl *rawRequest, numCalls int, interval time.Duration) burstSummary {
+//
+// start is normally the caller's scheduled launch instant (so per-request
+// jitter measures the true deviation from what the user asked for); a start
+// in the past fires immediately (catch-up, never drop).
+func runBurst(ctx context.Context, log *logger, client *http.Client, tmpl *rawRequest, numCalls int, interval time.Duration, start time.Time) burstSummary {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -142,8 +150,6 @@ func runBurst(ctx context.Context, log *logger, client *http.Client, tmpl *rawRe
 	//
 	// Each goroutine performs the precise wait itself, so the moment the
 	// busy-spin exits, client.Do runs with no scheduler handoff in between.
-	start := time.Now()
-
 	var wg sync.WaitGroup
 	for i := 1; i <= numCalls; i++ {
 		target := start.Add(time.Duration(i-1) * interval)

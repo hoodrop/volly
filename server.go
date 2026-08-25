@@ -102,13 +102,17 @@ func (s *launcherServer) Launch(ctx context.Context, req *launcherv1.LaunchReque
 	// wake-up and the first request.
 	client := newClient(int(req.GetNumCalls()))
 
+	// Anchor the burst timeline at the requested instant itself (see the
+	// CLI path in main.go), so request 1 aims at exactly launch_at.
+	start := time.Now()
 	if launchAt := req.GetLaunchAt(); launchAt != nil {
 		if err := waitUntil(ctx, log, launchAt.AsTime()); err != nil {
 			return nil, err
 		}
+		start = launchAt.AsTime()
 	}
 
-	summary := runBurst(ctx, log, client, tmpl, int(req.GetNumCalls()), req.GetInterval().AsDuration())
+	summary := runBurst(ctx, log, client, tmpl, int(req.GetNumCalls()), req.GetInterval().AsDuration(), start)
 
 	resp := &launcherv1.LaunchResponse{
 		Won:             summary.won,
@@ -167,8 +171,8 @@ func templateFromRequest(req *launcherv1.LaunchRequest) (*rawRequest, error) {
 // immediately (catch-up, never drop).
 func waitUntil(ctx context.Context, log *logger, target time.Time) error {
 	log.logf("scheduled launch: %s (%s UTC)",
-		target.In(log.loc).Format("2006-01-02 15:04:05 MST"),
-		target.UTC().Format("2006-01-02 15:04:05"))
+		target.In(log.loc).Format("2006-01-02 15:04:05.000000 MST"),
+		target.UTC().Format("2006-01-02 15:04:05.000000"))
 
 	if remaining := time.Until(target); remaining > spinMargin {
 		t := time.NewTimer(remaining - spinMargin)
