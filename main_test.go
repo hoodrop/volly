@@ -55,6 +55,63 @@ func TestConfigLocation(t *testing.T) {
 	}
 }
 
+func TestParseLaunchTime(t *testing.T) {
+	loc := time.UTC
+
+	// Time-only inputs anchor to today in loc (rolling to tomorrow once the
+	// time has passed); the fractional second must survive.
+	for _, tc := range []struct {
+		in        string
+		wantNanos int
+	}{
+		{"11:59:59", 0},
+		{"11:59:59.5", 500000000},
+		{"11:59:59:500000", 500000000}, // colon-separated fraction
+		{"11:59:59,250", 250000000},    // comma form, accepted by Go natively
+	} {
+		got, err := parseLaunchTime(tc.in, loc)
+		if err != nil {
+			t.Errorf("parseLaunchTime(%q): %v", tc.in, err)
+			continue
+		}
+		if got.Hour() != 11 || got.Minute() != 59 || got.Second() != 59 {
+			t.Errorf("parseLaunchTime(%q) = %v, wrong clock time", tc.in, got)
+		}
+		if got.Nanosecond() != tc.wantNanos {
+			t.Errorf("parseLaunchTime(%q) nanos = %d, want %d", tc.in, got.Nanosecond(), tc.wantNanos)
+		}
+		if now := time.Now().In(loc); got.Before(now.Add(-time.Second)) || got.After(now.Add(24*time.Hour)) {
+			t.Errorf("parseLaunchTime(%q) = %v, not within the next 24h", tc.in, got)
+		}
+	}
+
+	// Date+time inputs keep their date; both fraction separators work.
+	for _, tc := range []struct {
+		in        string
+		wantNanos int
+	}{
+		{"1970-01-01 09:00:00", 0},
+		{"1970-01-01 09:00:00.250", 250000000},
+		{"1970-01-01 09:00:00:250000", 250000000},
+	} {
+		got, err := parseLaunchTime(tc.in, loc)
+		if err != nil {
+			t.Errorf("parseLaunchTime(%q): %v", tc.in, err)
+			continue
+		}
+		want := time.Date(1970, 1, 1, 9, 0, 0, tc.wantNanos, loc)
+		if !got.Equal(want) {
+			t.Errorf("parseLaunchTime(%q) = %v, want %v", tc.in, got, want)
+		}
+	}
+
+	for _, in := range []string{"11:59", "11:59:60", "25:00:00", "11:59:59:", "garbage", "1970-01-01"} {
+		if _, err := parseLaunchTime(in, loc); err == nil {
+			t.Errorf("parseLaunchTime(%q): expected error, got none", in)
+		}
+	}
+}
+
 func TestParseProxymanRaw(t *testing.T) {
 	raw := "POST /api/book HTTP/1.1\r\n" +
 		"Host: example.com\r\n" +

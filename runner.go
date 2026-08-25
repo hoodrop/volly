@@ -125,16 +125,17 @@ func sleepUntilPrecise(target time.Time) {
 //  2. Precise: sleepUntilPrecise (sleep + final busy-spin) for the rest.
 func countdownUntil(log *logger, target time.Time) {
 	log.logf("scheduled launch: %s (%s UTC)",
-		target.In(log.loc).Format("2006-01-02 15:04:05 MST"),
-		target.UTC().Format("2006-01-02 15:04:05"))
+		target.In(log.loc).Format("2006-01-02 15:04:05.000000 MST"),
+		target.UTC().Format("2006-01-02 15:04:05.000000"))
 
-	// Phase 1 — coarse display loop.
+	// Phase 1 — coarse display loop; remaining is shown to the millisecond
+	// so a sub-second target reads exactly.
 	for {
 		remaining := time.Until(target)
 		if remaining <= 1500*time.Millisecond {
 			break
 		}
-		fmt.Printf("\rLaunching in %s...   ", remaining.Round(time.Second))
+		fmt.Printf("\rLaunching in %s...   ", remaining.Round(time.Millisecond))
 		time.Sleep(250 * time.Millisecond)
 	}
 
